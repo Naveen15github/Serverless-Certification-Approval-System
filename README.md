@@ -1,6 +1,6 @@
 # Serverless-Certification-Approval-System
 
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Gemini_Generated_Image_54rvq554rvq554rv.png)
 
 A fully serverless, event-driven Certification Approval System built on AWS using **Step Functions, Lambda, DynamoDB, and API Gateway**.
 
@@ -87,7 +87,7 @@ This project uses a **Standard Workflow** (not Express) to support long-running 
 
 ## ✅ Step 1: Create DynamoDB Table
 
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(447).png)
 
 1. Open DynamoDB Console
 2. Click **Create Table**
@@ -102,7 +102,7 @@ This project uses a **Standard Workflow** (not Express) to support long-running 
 
 ## ✅ Step 2: Create IAM Role for Lambda
 
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(448).png)
 
 Create role:
 
@@ -125,7 +125,7 @@ This role allows Lambda functions to:
 
 ## ✅ Step 3: Create Lambda Functions
 
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(449).png)
 
 Runtime: **Python 3.14**
 Architecture: x86_64
@@ -183,7 +183,8 @@ TABLE_NAME = CertificationRequests
 
 ## ✅ Step 4: Create Step Functions State Machine
 
-![Alt text](image-url-or-path)
+![Alt text](
+https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(450).png)
 
 1. Open Step Functions
 2. Create state machine
@@ -215,7 +216,7 @@ Save.
 
 ## ✅ Step 6: Create API Gateway
 
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(451).png)
 
 Create HTTP API:
 
@@ -309,7 +310,7 @@ curl https://<API-URL>/request/<REQUEST-ID>
   "status": "APPROVED"
 }
 ```
-![Alt text](image-url-or-path)
+![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(452).png)
 
 ---
 
