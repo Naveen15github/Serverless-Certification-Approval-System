@@ -11,13 +11,14 @@ The entire architecture is implemented manually via AWS Console to deeply unders
 ---
 
 ## 🏗️ Architecture Overview
+
 ### Core Services Used
 
-* **Amazon API Gateway** – Exposes HTTP endpoints
-* **AWS Lambda** – Stateless compute for business logic
-* **AWS Step Functions** – Orchestrates the approval workflow
-* **Amazon DynamoDB** – Persistent storage for request tracking
-* **AWS Identity and Access Management** – Secure service permissions
+- **Amazon API Gateway** – Exposes HTTP endpoints
+- **AWS Lambda** – Stateless compute for business logic
+- **AWS Step Functions** – Orchestrates the approval workflow
+- **Amazon DynamoDB** – Persistent storage for request tracking
+- **AWS Identity and Access Management** – Secure service permissions
 
 ---
 
@@ -39,6 +40,55 @@ The workflow pauses until the manager responds — demonstrating **callback patt
 
 # 🔄 Workflow Execution Flow
 
+## System Architecture Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant API as API Gateway
+    participant submit as Lambda: SubmitRequest
+    participant SFN as Step Functions
+    participant notify as Lambda: NotifyManager
+    participant DDB as DynamoDB
+    participant handle as Lambda: HandleApproval
+    actor Manager
+
+    User->>API: POST /request {details}
+    API->>submit: Trigger
+    submit->>SFN: StartExecution (requestId)
+    submit-->>User: Return 200 OK (requestId)
+
+    rect rgb(200, 220, 250)
+        Note over SFN,DDB: Step Function Execution Starts
+        SFN->>DDB: PutItem (status: PENDING)
+        SFN->>notify: Invoke (Wait for Task Token)
+        notify->>Manager: Send Notification (Approval Token)
+        Note over SFN: Workflow Pauses ⏸️
+    end
+
+    User->>API: GET /request/{requestId}
+    API->>DDB: Read Item
+    DDB-->>API: Return Item
+    API-->>User: status: PENDING
+
+    Manager->>API: POST /approval {token, decision}
+    API->>handle: Trigger
+    handle->>SFN: SendTaskSuccess (Decision)
+    handle-->>Manager: Return 200 OK
+
+    rect rgb(200, 250, 220)
+        Note over SFN,DDB: Step Function Execution Resumes ▶️
+        SFN->>DDB: UpdateItem (status: APPROVED/REJECTED)
+        Note over SFN: Workflow Ends
+    end
+
+    User->>API: GET /request/{requestId}
+    API->>DDB: Read Item
+    DDB-->>API: Return Item
+    API-->>User: status: APPROVED
+```
+
 1. User submits request → API Gateway
 2. Lambda triggers Step Functions execution
 3. Request stored in DynamoDB as `PENDING`
@@ -55,11 +105,11 @@ The workflow pauses until the manager responds — demonstrating **callback patt
 
 Unlike chaining Lambdas manually, Step Functions:
 
-* Manages retries
-* Handles wait states
-* Tracks execution visually
-* Supports callback pattern
-* Maintains state machine logic clearly
+- Manages retries
+- Handles wait states
+- Tracks execution visually
+- Supports callback pattern
+- Maintains state machine logic clearly
 
 This project uses a **Standard Workflow** (not Express) to support long-running approvals.
 
@@ -87,14 +137,14 @@ This project uses a **Standard Workflow** (not Express) to support long-running 
 
 ## ✅ Step 1: Create DynamoDB Table
 
-![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(447).png)
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(447).png>)
 
 1. Open DynamoDB Console
 2. Click **Create Table**
 3. Table Name: `CertificationRequests`
 4. Partition Key:
+   - `requestId` (String)
 
-   * `requestId` (String)
 5. Keep defaults
 6. Create table
 
@@ -102,30 +152,30 @@ This project uses a **Standard Workflow** (not Express) to support long-running 
 
 ## ✅ Step 2: Create IAM Role for Lambda
 
-![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(448).png)
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(448).png>)
 
 Create role:
 
-* Trusted Entity: Lambda
-* Policies:
+- Trusted Entity: Lambda
+- Policies:
+  - `AmazonDynamoDBFullAccess`
+  - `AWSStepFunctionsFullAccess`
+  - `CloudWatchLogsFullAccess`
 
-  * `AmazonDynamoDBFullAccess`
-  * `AWSStepFunctionsFullAccess`
-  * `CloudWatchLogsFullAccess`
-* Role Name: `CertificationLambdaRole`
+- Role Name: `CertificationLambdaRole`
 
 This role allows Lambda functions to:
 
-* Write/read DynamoDB
-* Start Step Function executions
-* Send task success/failure callbacks
-* Log to CloudWatch
+- Write/read DynamoDB
+- Start Step Function executions
+- Send task success/failure callbacks
+- Log to CloudWatch
 
 ---
 
 ## ✅ Step 3: Create Lambda Functions
 
-![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(449).png)
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(449).png>)
 
 Runtime: **Python 3.14**
 Architecture: x86_64
@@ -135,9 +185,9 @@ Execution Role: `CertificationLambdaRole`
 
 ### 1️⃣ SubmitRequestFunction
 
-* Stores request in DynamoDB
-* Starts Step Functions execution
-* Returns `requestId`
+- Stores request in DynamoDB
+- Starts Step Functions execution
+- Returns `requestId`
 
 Environment Variable:
 
@@ -149,29 +199,29 @@ STATE_MACHINE_ARN = <Update After Step 4>
 
 ### 2️⃣ NotifyManagerFunction
 
-* Logs approval task token
-* Simulates sending email to manager
-* Pauses workflow
+- Logs approval task token
+- Simulates sending email to manager
+- Pauses workflow
 
 ---
 
 ### 3️⃣ HandleApprovalFunction
 
-* Receives:
+- Receives:
+  - requestId
+  - decision (APPROVED / REJECTED)
+  - taskToken
 
-  * requestId
-  * decision (APPROVED / REJECTED)
-  * taskToken
-* Calls:
+- Calls:
+  - `SendTaskSuccess`
 
-  * `SendTaskSuccess`
-* Updates DynamoDB
+- Updates DynamoDB
 
 ---
 
 ### 4️⃣ CheckStatusFunction
 
-* Reads request status from DynamoDB
+- Reads request status from DynamoDB
 
 Environment Variable:
 
@@ -183,17 +233,16 @@ TABLE_NAME = CertificationRequests
 
 ## ✅ Step 4: Create Step Functions State Machine
 
-![Alt text](
-https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(450).png)
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(450).png>)
 
 1. Open Step Functions
 2. Create state machine
 3. Type: **Standard**
 4. Paste JSON from `step-functions-definition.json`
 5. Replace placeholders:
+   - `${DynamoDBTableName}`
+   - `${NotifyManagerFunctionName}`
 
-   * `${DynamoDBTableName}`
-   * `${NotifyManagerFunctionName}`
 6. Name: `ApprovalStateMachine`
 7. Create new execution role
 8. Create
@@ -216,7 +265,7 @@ Save.
 
 ## ✅ Step 6: Create API Gateway
 
-![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(451).png)
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(451).png>)
 
 Create HTTP API:
 
@@ -310,7 +359,8 @@ curl https://<API-URL>/request/<REQUEST-ID>
   "status": "APPROVED"
 }
 ```
-![Alt text](https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(452).png)
+
+![Alt text](<https://github.com/Naveen15github/Serverless-Certification-Approval-System/blob/bb30a9c334b46065608fd2d82e11b629a57ce671/Screenshot%20(452).png>)
 
 ---
 
@@ -320,45 +370,45 @@ curl https://<API-URL>/request/<REQUEST-ID>
 
 Cause:
 
-* Created **Express Workflow**
+- Created **Express Workflow**
 
 Fix:
 
-* Use **Standard Workflow**
-* Re-submit request
+- Use **Standard Workflow**
+- Re-submit request
 
 ---
 
 # 🎯 Key Technical Concepts Demonstrated
 
-* Callback Pattern with Task Tokens
-* State Machine Orchestration
-* Asynchronous Workflows
-* Serverless API Design
-* IAM Role Design
-* Event-driven Architecture
-* Persistent State Tracking
+- Callback Pattern with Task Tokens
+- State Machine Orchestration
+- Asynchronous Workflows
+- Serverless API Design
+- IAM Role Design
+- Event-driven Architecture
+- Persistent State Tracking
 
 ---
 
 # 📈 Production Improvements (Next Steps)
 
-* Replace full-access IAM policies with least privilege
-* Add SNS or SES for real email notifications
-* Add authentication (Cognito / JWT)
-* Add input validation
-* Add cost limits and manager hierarchy
-* Add CloudWatch alarms
+- Replace full-access IAM policies with least privilege
+- Add SNS or SES for real email notifications
+- Add authentication (Cognito / JWT)
+- Add input validation
+- Add cost limits and manager hierarchy
+- Add CloudWatch alarms
 
 ---
 
 # 📚 What This Project Proves
 
-* I understand how AWS services integrate
-* I can design asynchronous workflows
-* I can manage IAM roles and permissions
-* I can build production-style serverless systems
-* I can debug Step Functions execution
+- I understand how AWS services integrate
+- I can design asynchronous workflows
+- I can manage IAM roles and permissions
+- I can build production-style serverless systems
+- I can debug Step Functions execution
 
 This is not a tutorial clone —
 It is a fully implemented, tested, and validated serverless workflow system.
