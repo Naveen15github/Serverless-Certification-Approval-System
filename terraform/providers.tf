@@ -2,10 +2,10 @@ terraform {
   required_version = ">= 1.5.0"
 
   backend "s3" {
-    bucket  = "rajaram-terraform-state"
+    bucket  = "<bucket-name>"
     key     = "serverless-cert-approval/terraform.tfstate"
-    region  = "ap-south-1"
-    profile = "atlantis"
+    region  = "<region>"
+    profile = "<profile>"
   }
 
   required_providers {
